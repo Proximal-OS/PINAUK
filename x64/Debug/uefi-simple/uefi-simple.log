@@ -1,0 +1,13 @@
+﻿  main.c
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(117,3): warning C4098: 'KK': 'void' function returning a value
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(111,11): warning C4244: 'initializing': conversion from 'EFI_STATUS' to 'char', possible loss of data
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(404,12): warning C4244: 'initializing': conversion from 'EFI_STATUS' to 'char', possible loss of data
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(254,8): warning C4101: 'Event': unreferenced local variable
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(450,8): warning C4133: 'function': incompatible types - from 'char [2]' to 'const CHAR16 *'
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(451,8): warning C4133: 'function': incompatible types - from 'char [2]' to 'const CHAR16 *'
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(471,10): warning C4133: 'function': incompatible types - from 'char [2]' to 'const CHAR16 *'
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(472,10): warning C4133: 'function': incompatible types - from 'char [2]' to 'const CHAR16 *'
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(914,15): warning C4047: '=': 'unsigned char' differs in levels of indirection from 'void *'
+C:\Users\ProximalElk6186\source\repos\uefi-simple\main.c(916,1): warning C4716: 'create_process': must return a value
+main.obj : error LNK2019: unresolved external symbol __imp_malloc referenced in function create_process
+C:\Users\ProximalElk6186\source\repos\uefi-simple\x64\Debug\uefi-simple.efi : fatal error LNK1120: 1 unresolved externals
