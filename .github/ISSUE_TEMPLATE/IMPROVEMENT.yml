@@ -1,0 +1,54 @@
+name: Potential improvement reoprting
+description: File a potential improvement report.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this potential improvement report!
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+  - type: textarea
+    id: what
+    attributes:
+      label: What?
+      description: What do you want to be improved
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of our software are you running?
+      options:
+        - Alpha
+        - Beta
+        - Canary
+        - Dev preview
+        - Consumer preview
+        - Prerelease
+        - Release
+        - LTS
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Pseudocode implementation
+      description: How could we implement it?
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct.
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
