@@ -1,6 +1,6 @@
 ## **PINAUK Non-Commercial License v1.0**
 
-**Copyright (c) 2025 — Present, Proximal-OS Team**
+**Copyright (c) 2025-Present, Proximal-OS Team**
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to use,
