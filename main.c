@@ -7,7 +7,6 @@
 #include <efilib.h>
 #include <libsmbios.h>
 #include <stdbool.h>
-#include <string.h>
 #include <stdlib.h>
 
 // For processes
@@ -37,6 +36,40 @@ static CHAR16* ArchName = L"RISC-V 64-bit";
 #else
 #  error Unsupported architecture
 #endif
+
+char* strcpy(char* dest, const char* src) {
+	char* orig = dest;
+	while ((*dest++ = *src++));
+	return orig;
+}
+char* strtok(char* str, char delim) {
+	static char* next = NULL;
+
+	if (str != NULL) {
+		next = str;
+	}
+
+	if (next == NULL || *next == '\0') {
+		return NULL;
+	}
+
+	char* token_start = next;
+
+	// Skip over characters until we find the delimiter or end
+	while (*next != '\0' && *next != delim) {
+		next++;
+	}
+
+	// If we stopped at a delimiter, replace it with '\0' and move past it
+	if (*next == delim) {
+		*next = '\0';
+		next++;
+	}
+
+	return token_start;
+}
+
+
 int CharToGlyph(char c) {
 	switch (c) {
 	case ' ': return 0x0;
@@ -94,6 +127,11 @@ void neotermout_cls(UINT32* framebuffer, uint32_t width, uint32_t height, uint32
 int find_free_slot();
 // Tri-state status for Secure Boot: -1 = Setup, 0 = Disabled, 1 = Enabled
 INTN SecureBootStatus = 0;
+
+void Console();
+void ExecCmd(CHAR16 inpbuf[128]);
+
+
 
 /*
  * Query SMBIOS to display some info about the system hardware and UEFI firmware.
@@ -431,19 +469,21 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	//status = gBS->ExitBootServices(ImageHandle, mapKey);
 	if (EFI_ERROR(status)) {
 		// Memory map likely changed
-		kernel_panic("EXITBOOTSERVICES_MEMORYMAP_LIKELY_CHANGED");
+	//	kernel_panic("EXITBOOTSERVICES_MEMORYMAP_LIKELY_CHANGED");
 	}
 	// No more boot services, yahoo!
-	isNeoTermOutCrash = 1;
+	//isNeoTermOutCrash = 1;
 	neotermout_cls(framebuffer, pitch, height, 0xFFFFFFFF, 0x00000098);
 	print(framebuffer, pitch, 0, 0, "NEOTERMOUT(TM)", 0xFFFFFFFF, 0x00000098);
 	print(framebuffer, pitch, 0, 16, "THIS MESSAGE CONFIRMS THAT THE NEW TERMINAL OUTPUT", 0xFFFFFFFF, 0x00000098);
 	print(framebuffer, pitch, 0, 32, "IS INDEED WORKING CORRECTLY", 0xFFFFFFFF, 0x00000098);
 
-	while (1) 
-	{
-	
-	}
+
+	//while (1) 
+	//{
+	//
+	//}
+	Console();
 }
 void Console() 
 {
@@ -451,7 +491,8 @@ void Console()
 	Print(">");
 	CHAR16 inpbuffer[128];  // Buffer to store input
 	UINTN index = 0;
-	while (index < sizeof(inpbuffer) / sizeof(CHAR16) - 1) {
+	while (index < sizeof(inpbuffer) / sizeof(CHAR16) - 1) 
+	{
 		EFI_INPUT_KEY Key;
 		EFI_STATUS Status;
 
@@ -467,10 +508,11 @@ void Console()
 
 		// Handle special keys
 		if (Key.UnicodeChar == CHAR_CARRIAGE_RETURN) {
-			//break;  // Enter key pressed
-			Print("\n");
-			Print(">");
+			inpbuffer[index] = L'\0';  // Null-terminate input
+			// Try to execute the command
+			ExecCmd(inpbuffer);
 			index = 0;
+			Print(L"\n>");  // Optional: prompt again
 		}
 
 		if (Key.UnicodeChar == CHAR_BACKSPACE && index > 0) {
@@ -484,9 +526,121 @@ void Console()
 			Print(L"%c", Key.UnicodeChar);  // Echo back
 		}
 	}
-
-	inpbuffer[index] = L'\0';  // Null-terminate the input string
+	return;
 }
+
+//void shell_echo(char* argv[]) {
+//	int start = 1;
+//	int newline = 1;
+//
+//	// Print the arguments
+//	for (int i = start; i < argv; ++i) {
+//		Print(L"%s", argv[i]);
+//		if (i < argv - 1)
+//			Print(" ");
+//	}
+//
+//	if (newline) 
+//	{
+//		Print("\n");
+//	}
+//}
+void shell_echo(char* argv[]) {
+	int i = 0;
+	while (argv[i] != NULL) {
+		Print(L"%c ", argv[i]);
+		++i;
+	}
+	Print(L"\n");
+}
+
+
+//void ExecEcho(CHAR16 wholeCommand[])
+//{
+//	char out[128];
+//	for (int i = 0; i < 127 && wholeCommand[i] != 0; i++) {
+//		out[i] = (char)wholeCommand[i];
+//		out[i + 1] = '\0';
+//	}
+//
+//	char original[128];
+//	strcpy(original, out);
+//
+//	char* trimmed = original + 5;
+//
+//	shell_echo(trimmed);
+//}
+ 
+ 
+ 
+void ExecEcho(CHAR16 wholeCommand[]) {
+	char out[128];
+	for (int i = 0; i < 127 && wholeCommand[i] != 0; i++) {
+		out[i] = (char)wholeCommand[i];
+		out[i + 1] = '\0';
+	}
+
+	// Tokenize out into argv[]
+	char* argv[10];
+	int argc = 0;
+	char* token = strtok(out, " ");
+	while (token && argc < 10) {
+		argv[argc++] = token;
+		token = strtok(NULL, " ");
+	}
+	argv[argc] = NULL;  // Null-terminate
+
+	if (argc > 1) {
+		shell_echo(&argv[1]);  // Skip "echo"
+	}
+}
+
+ 
+ 
+ 
+ 
+
+//void ExecCmd(CHAR16 inpbuf[]) 
+//{
+//	Print(L"\n%s", inpbuf[1]);
+//	Print(L"\n%s", inpbuf[2]);
+//	Print(L"\n%s", inpbuf[3]);
+//	Print(L"\n%s", inpbuf[4]);
+//	if (inpbuf[1] == "e" && inpbuf[2] == "c" && inpbuf[3] == "h" && inpbuf[4] == "o")
+//	{
+//		ExecEcho(inpbuf);
+//	}
+//	else 
+//	{
+//		Print(L"\nCommand not found!\n");
+//	}
+//}
+void ExecCmd(CHAR16* input) {
+	CHAR16* command = StrDuplicate(input);  // Make a mutable copy
+	CHAR16* token;
+	CHAR16* next_token;
+	CHAR16* args[10];
+	int arg_count = 0;
+
+	for (token = strtok(/*command,*/ L" ", &next_token);
+		token != NULL && arg_count < 10;
+		token = strtok(/*NULL,*/ L" ", &next_token)) {
+		args[arg_count++] = token;
+	}
+
+	if (/*arg_count >= 1 && StrCmp(args[0], "ECHO"*/
+		args[0] == (short)"echo") {
+		ExecEcho(input);  // Or pass args
+	}
+	else {
+		Print(L"\nCommand not found: ", args[0]);
+	}
+
+	FreePool(command);  // if StrDuplicate used AllocatePool
+}
+
+
+
 void kernel_panic(const char* errorcode)
 {
 	CHAR16 buffer[256];
@@ -911,6 +1065,6 @@ struct Process* create_process(uint64_t mem_to_allocate, char exec_path[], unsig
 {
 	struct Process process;
 	process.processstate = READY;
-	*memoryArray = malloc(mem_to_allocate);
+//	*memoryArray = malloc(mem_to_allocate);
 	process.process_id = find_free_slot();
 }
