@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "gfxapi.h": "c",
+        "stdio.h": "c"
+    }
+}
