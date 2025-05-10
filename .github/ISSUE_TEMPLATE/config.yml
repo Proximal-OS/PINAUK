@@ -1,5 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: Proximal-OS Team Community Support
+  - name: PINAUK-OS Team Community Support
     url: https://github.com/Proximal-OS/PINAUK/discussions/2
     about: Please ask and answer questions here.
