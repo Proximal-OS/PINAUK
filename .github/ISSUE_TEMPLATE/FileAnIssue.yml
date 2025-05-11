@@ -1,5 +1,6 @@
-name: Issue reporting
-description: File an issue report.
+name: Bug reporting
+description: File a bug report.
+labels: "Bug – fix planned"
 body:
   - type: markdown
     attributes:
