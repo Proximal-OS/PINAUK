@@ -1,8 +1,3 @@
-/*
- * UEFI:SIMPLE - UEFI development made easy
- * Copyright ©️ 2014-2023 Pete Batard <pete@akeo.ie> - Public Domain
- * See COPYING for the full licensing terms.
- */
 #include <efi.h>
 #include <efilib.h>
 #include <libsmbios.h>
