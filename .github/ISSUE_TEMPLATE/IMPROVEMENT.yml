@@ -1,5 +1,7 @@
 name: Potential improvement reoprting
 description: File a potential improvement report.
+labels: "New feature – implementation planned"
+type: "Feature"
 body:
   - type: markdown
     attributes:
