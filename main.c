@@ -14,7 +14,7 @@
 
 // For legacy console output
 #define cls ST->ConOut->ClearScreen(ST->ConOut)
-#define printosver Print(L"PROXIMALOS UEFI KERNEL VERSION 0.0.1 ALPHA")
+#define printosver Print(L"PINAUK UEFI KERNEL VERSION ALPHA")
 #define bluescrcolor ST->ConOut->SetAttribute(ST->ConOut, EFI_WHITE | (EFI_BLUE << 4))
 
 // For font rendering (couldn't find a less appropriate place for it)
