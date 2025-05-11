@@ -1,6 +1,7 @@
 name: Bug reporting
 description: File a bug report.
 labels: "Bug – fix planned"
+type: "Bug"
 body:
   - type: markdown
     attributes:
