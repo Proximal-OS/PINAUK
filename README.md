@@ -25,7 +25,7 @@ If you need to test it on real hardware:
 #### Testing on real hardware
 1. Get a USB stick
 2. Format is as FAT32
-3. Copy the built binaries folder onto it (the entire folder, not just the binaries)
+3. Copy the built binaries folder onto it (the entire image folder's contents (subfolders), not just the binaries)
 4. Boot from the drive
 ### Note about ARM/ARM64 support
 Edit your current VS installation in VS Installer -> Add individual components "MSVC v142 - VS 2019 C++ ARM build tools (v14.22)" for ARM and "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.22)" for ARM64.
