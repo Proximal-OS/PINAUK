@@ -18,6 +18,7 @@
 #define GLYPHS_PER_ROW 16
 #define GLYPHS_PER_COL 16
 
+// Some shit for architectures, no-one will ever compile this kernel for RISC-V 64-bit, heck not even for ARM
 #if defined(_M_X64) || defined(__x86_64__)
 static CHAR16* ArchName = L"x86 64-bit";
 #elif defined(_M_IX86) || defined(__i386__)
@@ -28,35 +29,43 @@ static CHAR16* ArchName = L"ARM 64-bit";
 static CHAR16* ArchName = L"ARM 32-bit";
 #elif defined (_M_RISCV64) || (defined(__riscv) && (__riscv_xlen == 64))
 static CHAR16* ArchName = L"RISC-V 64-bit";
+// What on Earth is you fucking architecture?
 #else
 #  error Unsupported architecture
 #endif
 
-char* strcpy(char* dest, const char* src) {
+// Why the fuck is it here and not in a custom libc implementation?
+char* strcpy(char* dest, const char* src) 
+{
 	char* orig = dest;
 	while ((*dest++ = *src++));
 	return orig;
 }
-char* strtok(char* str, char delim) {
+char* strtok(char* str, char delim) 
+{
 	static char* next = NULL;
 
-	if (str != NULL) {
+	if (str != NULL) 
+	{
 		next = str;
 	}
 
-	if (next == NULL || *next == '\0') {
+	if (next == NULL || *next == '\0') 
+	{
 		return NULL;
 	}
 
 	char* token_start = next;
 
 	// Skip over characters until we find the delimiter or end
-	while (*next != '\0' && *next != delim) {
+	while (*next != '\0' && *next != delim) 
+	{
 		next++;
 	}
 
 	// If we stopped at a delimiter, replace it with '\0' and move past it
-	if (*next == delim) {
+	if (*next == delim) 
+	{
 		*next = '\0';
 		next++;
 	}
@@ -64,9 +73,11 @@ char* strtok(char* str, char delim) {
 	return token_start;
 }
 
-
-int CharToGlyph(char c) {
-	switch (c) {
+// WARNING: A VEEEERY GROSS HACK HACK HACK HACK HACK HACK HACK HACK AHEAD
+int CharToGlyph(char c) 
+{
+	switch (c) 
+	{
 	case ' ': return 0x0;
 	case 'A': return 0x1;
 	case 'B': return 0x2;
@@ -98,16 +109,20 @@ int CharToGlyph(char c) {
 	}
 }
 
+// Now, idk is it used or no neither I give it a shit
+
 /// <summary>
 /// Gets a string length
 /// </summary>
 /// <param name="str">ur string</param>
 /// <returns>Length of string **MINUS 4**</returns>
-UINTN strlen(const char* str) {
+UINTN strlen(const char* str) 
+{
 	UINTN len = 0;
 	while (*str++) len++;
 	return len;
 }
+// Basically a soup of everything that belongs here and what doesn't
 UINT32 font_glyphs[256][GLYPH_HEIGHT][GLYPH_WIDTH];
 void kernel_panic(const char* errorcode);
 int isNeoTermOutCrash = 0;
@@ -118,7 +133,7 @@ void PutChar(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t x,
 char char_to_vga_index(char c);
 void print(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t x, uint32_t y, char c[], uint32_t fg, uint32_t bg);
 
-void neotermout_cls(UINT32* framebuffer, uint32_t width, uint32_t height, uint32_t fg, uint32_t bg);
+void neotermout_cls(UINT32* framebuffer, uint32_t width, uint32_t height, uint32_t fg, uint32_t bg);	// Fuck it's mostly unused for anything real anyways
 int find_free_slot();
 // Tri-state status for Secure Boot: -1 = Setup, 0 = Disabled, 1 = Enabled
 INTN SecureBootStatus = 0;
@@ -128,10 +143,7 @@ void ExecCmd(CHAR16 inpbuf[128]);
 
 
 
-/*
- * Query SMBIOS to display some info about the system hardware and UEFI firmware.
- * Also display the current Secure Boot status.
- */
+
 /*void draw_pixel(UINT32* framebuffer, UINT32 width, UINT32 x, UINT32 y, UINT32 color)
 {
 	framebuffer[y * width + x] = color;
@@ -145,12 +157,14 @@ void KK()
 		&SimpleTextInputExProtocolGuid,
 		NULL,
 		(VOID**)&InputEx);
-	if (EFI_ERROR(Status)) {
-		Print(L"Failed to locate SimpleTextInputEx protocol\n");
+	if (EFI_ERROR(Status)) 
+	{
+		Print(L"Failed to locate SimpleTextInputEx protocol\n");	// Better to make it kernel_panic, but idrk
 		return Status;
 	}
 }
-void draw_pixel(UINT32* framebuffer, UINT32 pitch, UINT32 x, UINT32 y, UINT32 color) {
+void draw_pixel(UINT32* framebuffer, UINT32 pitch, UINT32 x, UINT32 y, UINT32 color) 
+{
 	framebuffer[y * pitch + x] = color;
 }
 EFI_FILE_PROTOCOL* load_file(
@@ -211,10 +225,13 @@ static EFI_STATUS PrintSystemInfo(VOID)
 		gST->FirmwareVendor, gST->FirmwareRevision);
 
 	Status = LibGetSystemConfigurationTable(&SMBIOS3TableGuid, (VOID**)&Smbios3Table);
-	if (Status == EFI_SUCCESS) {
+	if (Status == EFI_SUCCESS) 
+	{
 		Smbios.Hdr = (SMBIOS_HEADER*)Smbios3Table->TableAddress;
 		MaximumSize = (UINTN)Smbios3Table->TableMaximumSize;
-	} else {
+	}
+	else 
+	{
 		Status = LibGetSystemConfigurationTable(&SMBIOSTableGuid, (VOID**)&SmbiosTable);
 		if (EFI_ERROR(Status))
 			return EFI_NOT_FOUND;
@@ -222,21 +239,25 @@ static EFI_STATUS PrintSystemInfo(VOID)
 		MaximumSize = (UINTN)SmbiosTable->TableLength;
 	}
 
-	while ((Smbios.Hdr->Type != 0x7F) && (Found < 2)) {
+	while ((Smbios.Hdr->Type != 0x7F) && (Found < 2)) 
+	{
 		Raw = Smbios.Raw;
-		if (Smbios.Hdr->Type == 0) {
+		if (Smbios.Hdr->Type == 0) 
+		{
 			Print(L"%a %a\n", LibGetSmbiosString(&Smbios, Smbios.Type0->Vendor),
 				LibGetSmbiosString(&Smbios, Smbios.Type0->BiosVersion));
 			Found++;
 		}
-		if (Smbios.Hdr->Type == 1) {
+		if (Smbios.Hdr->Type == 1) 
+		{
 			Print(L"%a %a\n", LibGetSmbiosString(&Smbios, Smbios.Type1->Manufacturer),
 				LibGetSmbiosString(&Smbios, Smbios.Type1->ProductName));
 			Found++;
 		}
 		LibGetSmbiosString(&Smbios, -1);
 		ProcessedSize += (UINTN)Smbios.Raw - (UINTN)Raw;
-		if (ProcessedSize > MaximumSize) {
+		if (ProcessedSize > MaximumSize) 
+		{
 			Print(L"%EAborting system report due to noncompliant SMBIOS%N\n");
 			return EFI_ABORTED;
 		}
@@ -261,7 +282,8 @@ static EFI_STATUS PrintSystemInfo(VOID)
 	return EFI_SUCCESS;
 }
 #pragma pack(push, 1)
-typedef struct {
+typedef struct 
+{
 	UINT8  signature[2];   // 'B' 'M'
 	UINT32 fileSize;
 	UINT32 reserved;
@@ -280,7 +302,7 @@ typedef struct {
 	UINT32 importantColors;
 } BMPHeader;
 #pragma pack(pop)
-EFI_SIMPLE_POINTER_PROTOCOL* mouse;
+EFI_SIMPLE_POINTER_PROTOCOL* mouse;	// Fuck it's unused as of 15.05.2025 anyways
 // Application entrypoint (must be set to 'efi_main' for gnu-efi crt0 compatibility)
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
@@ -316,26 +338,27 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	{
 		Print(L"\nGOP initialization failed!\n");
 		kernel_panic("GOP_INIT_FAILED");
-		while (1 == 1)
+		while (1 == 1)	// Why is it here? kernel_panic already loops infinitely
 		{
 
 		}
 	}
 
-	//UINT32* framebuffer = (UINT32*)gop->Mode->FrameBufferBase;
-	UINT32* framebuffer = (UINT32*)gop->Mode->FrameBufferBase;
+	//UINT32* framebuffer = (UINT32*)gop->Mode->FrameBufferBase;	// Fucking why commenting it out
+	UINT32* framebuffer = (UINT32*)gop->Mode->FrameBufferBase;	// and writing it on the next line?
 	Print(L"Set the GOP framebuffer\n");
-	//UINT32 width = gop->Mode->Info->HorizontalResolution;
+	//UINT32 width = gop->Mode->Info->HorizontalResolution;	// ???
 	UINT32 pitch = gop->Mode->Info->PixelsPerScanLine;
-	Print(L"Set the GOP width\n");
+	Print(L"Set the GOP width\n");	// ik it's pitch, but i don't really give it a fuck
 	UINT32 height = gop->Mode->Info->VerticalResolution;
 	Print(L"Set the GOP height\n");
 	Print(L"Screen resolution is: %d x %d", pitch, height);
 	Print(L"\n");
 	EFI_FILE_PROTOCOL* file = load_file(ImageHandle, SystemTable, L"\\syslogo.bmp");
-	if (file == NULL) {
+	if (file == NULL) 
+	{
 		Print(L"Failed to open syslogo.bmp\n");
-		while (1 == 1)
+		while (1 == 1)	// Why not kernel_panic?
 		{
 
 		}
@@ -343,14 +366,16 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	}
 
 #pragma pack(push, 1)
-	typedef struct {
+	typedef struct 
+	{
 		UINT16 signature;        // Should be 'BM'
 		UINT32 file_size;
 		UINT32 reserved;
 		UINT32 pixel_array_offset;
 	} BMPHeader;
 
-	typedef struct {
+	typedef struct 
+	{
 		UINT32 header_size;
 		INT32 width;
 		INT32 height;
@@ -358,7 +383,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 		UINT16 bits_per_pixel;
 		UINT32 compression;
 		UINT32 image_size;
-		// ... you can add more later
+		// ... we can add more later if we ever need to, but why??????
 	} DIBHeader;
 #pragma pack(pop)
 
@@ -368,7 +393,8 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	file->SetPosition(file, 0);
 	file->Read(file, &size, &bmp_header);
 
-	if (bmp_header.signature != 0x4D42) {
+	if (bmp_header.signature != 0x4D42) 
+	{
 		Print(L"Not a BMP file\n");
 		return EFI_ABORTED;
 	}
@@ -382,9 +408,11 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	UINT32 image_height = dib_header.height;
 	UINT16 bpp = dib_header.bits_per_pixel;
 
-	if (bpp != 24) {
+	if (bpp != 24) 
+	{
 		Print(L"Only 24bpp BMPs are supported.\n");
-		return EFI_ABORTED;
+		kernel_panic("BMP_NOT_24BIT");
+		return EFI_ABORTED;	// Again, why not kernel_panic?
 	}
 
 	// Each row is padded to 4-byte boundary
@@ -392,9 +420,11 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	UINT32 image_data_size = row_size * image_height;
 
 	UINT8* pixel_data = AllocatePool(image_data_size);
-	if (!pixel_data) {
+	if (!pixel_data) 
+	{
 		Print(L"Out of memory\n");
-		return EFI_ABORTED;
+		kernel_panic("BMP_LOAD_OUT_OF_MEMORY");
+		return EFI_ABORTED;	// Why not fucking kernel panic???
 	}
 
 	// Read pixel data
@@ -411,8 +441,10 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	UINT32 offset_x = (pitch - scaled_width) / 2;
 	UINT32 offset_y = (height - scaled_height) / 2;
 
-	for (UINT32 y = 0; y < image_height; y++) {
-		for (UINT32 x = 0; x < image_width; x++) {
+	for (UINT32 y = 0; y < image_height; y++) 
+	{
+		for (UINT32 x = 0; x < image_width; x++) 
+		{
 			UINT32 row = image_height - 1 - y; // Turn it upside-down (BMPs are upside-down)
 			UINT8* pixel = pixel_data + row * row_size + x * 3;
 			UINT8 blue = pixel[0];
@@ -420,9 +452,11 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 			UINT8 red = pixel[2];
 			UINT32 color = (red << 16) | (green << 8) | blue;
 
-			// Draw a scale×scale block per source pixel
-			for (UINT32 dy = 0; dy < scale; dy++) {
-				for (UINT32 dx = 0; dx < scale; dx++) {
+			// Draw a scale×scale block per source pixel (for integer scaling)
+			for (UINT32 dy = 0; dy < scale; dy++) 
+			{
+				for (UINT32 dx = 0; dx < scale; dx++) 
+				{
 					draw_pixel(framebuffer, pitch, offset_x + x * scale + dx,
 						offset_y + y * scale + dy,
 						color);
@@ -438,8 +472,10 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 			&SimpleTextInputExProtocolGuid,
 			NULL,
 			(VOID**)&InputEx);
-	if (EFI_ERROR(Status)) {
+	if (EFI_ERROR(Status)) 
+	{
 		Print(L"Failed to locate SimpleTextInputEx protocol\n");
+		kernel_panic("SIMPLE_TEXT_INPUT_EX_LOCATION_FAILED");
 		return Status;
 	}
 	gBS->Stall(10);
@@ -472,8 +508,9 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	print(framebuffer, pitch, 0, 0, "NEOTERMOUT(TM)", 0xFFFFFFFF, 0x00000098);
 	print(framebuffer, pitch, 0, 16, "THIS MESSAGE CONFIRMS THAT THE NEW TERMINAL OUTPUT", 0xFFFFFFFF, 0x00000098);
 	print(framebuffer, pitch, 0, 32, "IS INDEED WORKING CORRECTLY", 0xFFFFFFFF, 0x00000098);
+	// The only usages of the "trademarked" NeoTermOut (as of 15.05.2025)
 
-
+	// ???????????
 	//while (1) 
 	//{
 	//
@@ -497,12 +534,14 @@ void Console()
 
 		// Read the key
 		Status = ST->ConIn->ReadKeyStroke(ST->ConIn, &Key);
-		if (EFI_ERROR(Status)) {
+		if (EFI_ERROR(Status)) 
+		{
 			continue;
 		}
 
 		// Handle special keys
-		if (Key.UnicodeChar == CHAR_CARRIAGE_RETURN) {
+		if (Key.UnicodeChar == CHAR_CARRIAGE_RETURN) 
+		{
 			inpbuffer[index] = L'\0';  // Null-terminate input
 			// Try to execute the command
 			ExecCmd(inpbuffer);
@@ -510,13 +549,15 @@ void Console()
 			Print(L"\n>");  // Optional: prompt again
 		}
 
-		if (Key.UnicodeChar == CHAR_BACKSPACE && index > 0) {
+		if (Key.UnicodeChar == CHAR_BACKSPACE && index > 0) 
+		{
 			index--;
 			Print(L"\b \b");  // Erase the last character
 			continue;
 		}
 
-		if (Key.UnicodeChar >= 32 && Key.UnicodeChar <= 126) {
+		if (Key.UnicodeChar >= 32 && Key.UnicodeChar <= 126) 
+		{
 			inpbuffer[index++] = Key.UnicodeChar;
 			Print(L"%c", Key.UnicodeChar);  // Echo back
 		}
@@ -540,7 +581,8 @@ void Console()
 //		Print("\n");
 //	}
 //}
-void shell_echo(char* argv[]) {
+void shell_echo(char* argv[]) 
+{
 	int i = 0;
 	while (argv[i] != NULL) {
 		Print(L"%c ", argv[i]);
@@ -568,7 +610,8 @@ void shell_echo(char* argv[]) {
  
  
  
-void ExecEcho(CHAR16 wholeCommand[]) {
+void ExecEcho(CHAR16 wholeCommand[]) 
+{
 	char out[128];
 	for (int i = 0; i < 127 && wholeCommand[i] != 0; i++) {
 		out[i] = (char)wholeCommand[i];
@@ -610,7 +653,8 @@ void ExecEcho(CHAR16 wholeCommand[]) {
 //		Print(L"\nCommand not found!\n");
 //	}
 //}
-void ExecCmd(CHAR16* input) {
+void ExecCmd(CHAR16* input) 
+{
 	CHAR16* command = StrDuplicate(input);  // Make a mutable copy
 	CHAR16* token;
 	CHAR16* next_token;
@@ -619,30 +663,35 @@ void ExecCmd(CHAR16* input) {
 
 	for (token = strtok(/*command,*/ L" ", &next_token);
 		token != NULL && arg_count < 10;
-		token = strtok(/*NULL,*/ L" ", &next_token)) {
+		token = strtok(/*NULL,*/ L" ", &next_token)) 
+	{
 		args[arg_count++] = token;
 	}
 
 	if (/*arg_count >= 1 && StrCmp(args[0], "ECHO"*/
-		args[0] == (short)"echo") {
+		args[0] == (short)"echo") 
+	{
 		ExecEcho(input);  // Or pass args
 	}
-	else {
+	else 
+	{
 		Print(L"\nCommand not found: ", args[0]);
 	}
 
 	FreePool(command);  // if StrDuplicate used AllocatePool
+			// Wait, I may've found the issue now
 }
 
 
-
+// The most important function
 void kernel_panic(const char* errorcode)
 {
 	CHAR16 buffer[256];
 	UINTN i;
 
 	// Convert to CHAR16
-	for (i = 0; errorcode[i] != '\0' && i < 255; i++) {
+	for (i = 0; errorcode[i] != '\0' && i < 255; i++) 
+	{
 		buffer[i] = (CHAR16)errorcode[i];
 	}
 	buffer[i] = 0; // NULL-terminate the string
@@ -659,6 +708,7 @@ void kernel_panic(const char* errorcode)
 		(void)halt;
 	}
 }
+// Font for the "trademarked" NeoTermOut
 // Some are commented-out due to...
 //
 //
@@ -972,12 +1022,15 @@ uint8_t vgafont16[256 * 16] = {
 };
 
 
-void PutChar(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg) {
+void PutChar(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg) 
+{
 	uint8_t* glyph = &vgafont16[(uint8_t)c * 16];
 
-	for (int row = 0; row < 16; ++row) {
+	for (int row = 0; row < 16; ++row) 
+	{
 		uint8_t row_bits = glyph[row];
-		for (int col = 0; col < 8; ++col) {
+		for (int col = 0; col < 8; ++col) 
+		{
 			bool pixel_on = row_bits & (0x80 >> col);
 			uint32_t* pixel_ptr = framebuffer_base +
 				(y + row) * pixels_per_scanline +
