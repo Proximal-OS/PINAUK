@@ -19,7 +19,7 @@ if not exist "C:\PBFT\temp.txt" (
     exit /b
 )
 
-:: We're now elevated. Load the previously stored script directory
+:: We're now elevated. I guess... if the previous usage hasn't failed. Anyways... Load the previously stored script directory
 set /p ScriptDir=<C:\PBFT\temp.txt
 
 :: Show available disks
@@ -38,7 +38,7 @@ echo %PN% | findstr /r "^[0-9][0-9]*$"
 set /p PL=Enter a free partition letter (without ":"): 
 echo %PL% | findstr /r "^[a-zA-Z]$" 
 
-:: Diskpart: wipe, format, assign
+:: Diskpart: the scariest shit. I feel with my ass that I will lose data due to -t-h-i-s--s-c-r-i-p-t- my mistake sometime in the future...
 (
     echo select disk %PN%
     echo clean
