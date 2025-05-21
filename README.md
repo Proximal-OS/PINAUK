@@ -29,7 +29,7 @@ The more experimental (**and UNTESTED**) method is with [```make```](https://git
 
 ### Prerequesites
 - gcc/make
-- QEMU v2.7 or later (NB: You can find QEMU Windows binaries here)
+- QEMU v2.7 or later
 - git
 - wget, unzip
 ### Building
