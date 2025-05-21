@@ -18,7 +18,7 @@ You can either build and run through Visual Studio or using ```make``` or non-Wi
 
 The recommended way is through [Visual Studio](https://github.com/PINAUK-OS/PINAUK/tree/main?tab=readme-ov-file#how-to-build-and-run).
 
-The more experimental (**and UNTESTED**) method is with [```make```].
+The more experimental (**and UNTESTED**) method is with [```make```](https://github.com/PINAUK-OS/PINAUK/tree/main?tab=readme-ov-file#how-to-build-and-run-with-make).
 ***
 ***
 ***
