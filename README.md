@@ -25,7 +25,7 @@ The more experimental (**and UNTESTED**) method is with [```make```](https://git
 ***
 ***
 
-## How to build and run with ```make``
+## How to build and run with ```make```
 
 ### Prerequesites
 - gcc/make
