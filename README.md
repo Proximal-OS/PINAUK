@@ -1,10 +1,4 @@
 # PINAUK
-
->[!Warning]
-> If you currently try to build PINAUK through Visual Studio, opening the solution will currently unfortunately result in an error. We'll fix it as soon as possible.
->
-> _the issue is known as of 21.MAY.2025._
-
 PINAUK Is Not an Another Unix Kernel
 
 Yeah, it uses UEFI-SIMPLE.
