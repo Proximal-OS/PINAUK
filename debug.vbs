@@ -142,7 +142,6 @@ End If
 ' Copy the app file as boot application and run it in QEMU
 Call shell.Run("%COMSPEC% /c mkdir ""image\efi\boot""", 0, True)
 Call fso.CopyFile(WScript.Arguments(0), "image\efi\boot\" & BOOT_NAME, True)
-Call fso.CopyFile("syslogo.bmp", "image\efi\boot\")
 ' NB: We mount the UEFI firmware as -drive rather than -bios so that we can
 ' persist NV Variables, such as Secure Boot ones, into the firmware file.
 ' However, we use -bios for ARM images as -drive doesn't work there

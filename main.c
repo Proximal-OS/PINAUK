@@ -3,6 +3,7 @@
 #include <libsmbios.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "INCLUDE/CryptoAndModuleSigEnforcement/crypto.c"
 
 // For processes
 #define MAX_PROCESSES 256
@@ -33,7 +34,9 @@ static CHAR16* ArchName = L"RISC-V 64-bit";
 #else
 #  error Unsupported architecture
 #endif
-
+void printstr(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t screen_height, char c[]);
+uint32_t currtextx, currtexty = 0;
+void test_sha256();
 // Why the fuck is it here and not in a custom libc implementation?
 char* strcpy(char* dest, const char* src) 
 {
@@ -115,7 +118,7 @@ int CharToGlyph(char c)
 /// Gets a string length
 /// </summary>
 /// <param name="str">ur string</param>
-/// <returns>Length of string **MINUS 4**</returns>
+/// <returns>Length of string **MINUS 4**</returns> (I guess minus 4, didn't really test it)
 UINTN strlen(const char* str) 
 {
 	UINTN len = 0;
@@ -124,7 +127,7 @@ UINTN strlen(const char* str)
 }
 // Basically a soup of everything that belongs here and what doesn't
 UINT32 font_glyphs[256][GLYPH_HEIGHT][GLYPH_WIDTH];
-void kernel_panic(const char* errorcode);
+void kernel_panic(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t screen_height, const char* errorcode);
 int isNeoTermOutCrash = 0;
 void createProcess(const char* path);
 //void draw_char(UINT32* framebuffer, UINT32 pitch, UINT32 x, UINT32 y, char c);
@@ -205,7 +208,8 @@ EFI_FILE_PROTOCOL* load_file(
 
 	if (EFI_ERROR(status)) {
 		Print(L"Open file failed: %r\n", status);
-		kernel_panic("CRITICAL_FILE_NOT_FOUND");
+		for (;;);
+		//kernel_panic("CRITICAL_FILE_NOT_FOUND");
 		return NULL;
 	}
 
@@ -303,6 +307,7 @@ typedef struct
 } BMPHeader;
 #pragma pack(pop)
 EFI_SIMPLE_POINTER_PROTOCOL* mouse;	// Fuck it's unused as of 15.05.2025 anyways
+
 // Application entrypoint (must be set to 'efi_main' for gnu-efi crt0 compatibility)
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
@@ -337,7 +342,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	else if (status != EFI_SUCCESS) 
 	{
 		Print(L"\nGOP initialization failed!\n");
-		kernel_panic("GOP_INIT_FAILED");
+		//kernel_panic("GOP_INIT_FAILED");
 		while (1 == 1)	// Why is it here? kernel_panic already loops infinitely
 		{
 
@@ -411,7 +416,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	if (bpp != 24) 
 	{
 		Print(L"Only 24bpp BMPs are supported.\n");
-		kernel_panic("BMP_NOT_24BIT");
+		kernel_panic(framebuffer, pitch, height, "BMP_NOT_24BIT");
 		return EFI_ABORTED;	// Again, why not kernel_panic?
 	}
 
@@ -423,7 +428,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	if (!pixel_data) 
 	{
 		Print(L"Out of memory\n");
-		kernel_panic("BMP_LOAD_OUT_OF_MEMORY");
+		kernel_panic(framebuffer, pitch, height, "BMP_LOAD_OUT_OF_MEMORY");
 		return EFI_ABORTED;	// Why not fucking kernel panic???
 	}
 
@@ -475,7 +480,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	if (EFI_ERROR(Status)) 
 	{
 		Print(L"Failed to locate SimpleTextInputEx protocol\n");
-		kernel_panic("SIMPLE_TEXT_INPUT_EX_LOCATION_FAILED");
+		kernel_panic(framebuffer, pitch, height, "SIMPLE_TEXT_INPUT_EX_LOCATION_FAILED");
 		return Status;
 	}
 	gBS->Stall(10);
@@ -515,8 +520,33 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	//{
 	//
 	//}
+
+	test_sha256();
+	kernel_panic(framebuffer, pitch, height, "TEST_KERNEL_PANIC"); // For testing the new kernel panic function
 	Console();
 }
+static void print_hash_utf16(const uint8_t* hash) 
+{
+	const CHAR16 hex[] = u"0123456789abcdef";
+	CHAR16 buf[65]; // 64 hex chars + null terminator
+	for (int i = 0; i < 32; ++i) {
+		buf[i * 2] = hex[hash[i] >> 4];
+		buf[i * 2 + 1] = hex[hash[i] & 0xF];
+	}
+	buf[64] = 0; // null terminator
+	Print("\n");
+	Print(buf); // Or whatever outputs CHAR16*
+}
+
+
+void test_sha256() 
+{
+	const char* msg = "abc"; // still ASCII here
+	uint8_t hash[32];
+	sha256_compute((const uint8_t*)msg, strlen(msg), hash);
+	print_hash_utf16(hash); // now prints it as CHAR16 string
+}
+
 void Console() 
 {
 	Print("\n");
@@ -684,7 +714,7 @@ void ExecCmd(CHAR16* input)
 
 
 // The most important function
-void kernel_panic(const char* errorcode)
+/*void kernel_panic(const char* errorcode)
 {
 	CHAR16 buffer[256];
 	UINTN i;
@@ -707,7 +737,62 @@ void kernel_panic(const char* errorcode)
 		volatile int halt = 1;
 		(void)halt;
 	}
+}*/
+#include <intrin.h>
+void ClearScreen(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t screen_height, uint32_t clear_color)
+{
+	for (uint32_t y = 0; y < screen_height; ++y)
+	{
+		for (uint32_t x = 0; x < pixels_per_scanline; ++x)
+		{
+			framebuffer_base[y * pixels_per_scanline + x] = clear_color;
+		}
+	}
 }
+
+void kernel_panic(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t screen_height, const char* errorcode)
+{
+	// Clear screen (optional)
+	//for (uint32_t y = 0; y < screen_height; ++y)
+	//{
+	//	for (uint32_t x = 0; x < pixels_per_scanline; ++x)
+	//	{
+	//		framebuffer_base[y * pixels_per_scanline + x] = 0xFF0000; // Bright red background
+	//	}
+	//}
+	ClearScreen(framebuffer_base, pixels_per_scanline, screen_height, 0x00000098);
+
+	currtextx = 0;
+	currtexty = 0;
+
+	// All caps because I think I commented out the small letters glyphs
+	printstr(framebuffer_base, pixels_per_scanline, screen_height, "*** KERNEL PANIC ***");
+	currtextx = 0;	// Nasty hack to reset the text cursor position
+	printstr(framebuffer_base, pixels_per_scanline, screen_height, "ERROR: ");
+	currtextx = 0;	// Nasty hack to reset the text cursor position
+	printstr(framebuffer_base, pixels_per_scanline, screen_height, errorcode);
+	currtextx = 0;	// Nasty hack to reset the text cursor position
+	printstr(framebuffer_base, pixels_per_scanline, screen_height, "SYSTEM HALTED.");
+	currtextx = 0;	// Nasty hack to reset the text cursor position
+	printstr(framebuffer_base, pixels_per_scanline, screen_height, "DO NOT TRY TO REPORT THIS TO THE DEV, THEY WON'T FIX IT ANYWAYS");
+	currtextx = 0;	// Nasty hack to reset the text cursor position
+	printstr(framebuffer_base, pixels_per_scanline, screen_height, "PLUS IT WORKED FINE ON MY MACHINE LMAO");
+	currtextx = 0;	// Nasty hack to reset the text cursor position (if you still didn't get it from the prevoius six comments)
+	printstr(framebuffer_base, pixels_per_scanline, screen_height, "seriously what'd u do");	// No-one will see it since I commented out the small letters glyphs, but whatever
+	// Ehh whatever, it works now, and it is not corrupted YAHOOOOOOOOOOOOOOOOO!
+	// Lol the code is more comments than actual code
+
+	// Halt the CPU
+	while (1)
+	{
+		__halt();
+
+		//printstr(framebuffer_base, pixels_per_scanline, screen_height, "If you see me then the CPU isn't halted");
+		// OK, it's not halted, and the output is also corrupted. Ehh, whatever, the OS is still for stooooooopid users who can't read error codes,
+		// they will just scream and blame me for "NoT mAkInG mY oS wOrK pRoPeRlY", 
+	}
+}
+
 // Font for the "trademarked" NeoTermOut
 // Some are commented-out due to...
 //
@@ -758,6 +843,9 @@ void kernel_panic(const char* errorcode)
 //
 //
 // Well, I guess I can: otherwise I couldn't get it to work
+// properly, so I just commented out the unused glyphs, and it worked!
+// I guess it was a bug in the font loader, but I don't really care about it now, so I just left it like that
+// That shit wasn't used anyways
 
 
 
@@ -1020,6 +1108,53 @@ uint8_t vgafont16[256 * 16] = {
  	0x00, 0x00, 0x00, 0x00, 0x7c, 0x7c, 0x7c, 0x7c, 0x7c, 0x7c, 0x7c, 0x00, 0x00, 0x00, 0x00, 0x00,
  	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+void scroll(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t screen_height, uint32_t bg_color)
+{
+	// Calculate how many pixel rows we scroll (one text line)
+	uint32_t scroll_lines = GLYPH_HEIGHT;
+
+	// For each row except the last scroll_lines
+	for (uint32_t y = 0; y < screen_height - scroll_lines; ++y)
+	{
+		for (uint32_t x = 0; x < pixels_per_scanline; ++x)
+		{
+			framebuffer_base[y * pixels_per_scanline + x] = framebuffer_base[(y + scroll_lines) * pixels_per_scanline + x];
+		}
+	}
+
+	// Clear the last GLYPH_HEIGHT lines
+	for (uint32_t y = screen_height - scroll_lines; y < screen_height; ++y)
+	{
+		for (uint32_t x = 0; x < pixels_per_scanline; ++x)
+		{
+			framebuffer_base[y * pixels_per_scanline + x] = bg_color;
+		}
+	}
+}
+
+void printstr(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t screen_height, char c[])
+{
+	Print(L"StrLen of c: %d", strlen(c));
+	print(framebuffer_base, pixels_per_scanline, currtextx, currtexty, c, 0xFFFFFFFF, 0x00000098);
+	currtextx += strlen(c) * GLYPH_WIDTH;
+
+	// Scroll if we reached bottom
+	if (currtexty + GLYPH_HEIGHT >= screen_height)
+	{
+		scroll(framebuffer_base, pixels_per_scanline, screen_height, 0x00000098); // dark blue
+		currtexty -= GLYPH_HEIGHT; // Stay at last line
+	}
+	else
+	{
+		currtexty += GLYPH_HEIGHT;
+	}
+
+	if (currtextx > pixels_per_scanline)
+	{
+		currtextx = 0;
+		currtexty += GLYPH_HEIGHT;
+	}
+}
 
 
 void PutChar(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg) 
@@ -1041,7 +1176,7 @@ void PutChar(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t x,
 }
 void print(UINT32* framebuffer_base, uint32_t pixels_per_scanline, uint32_t x, uint32_t y, char c[], uint32_t fg, uint32_t bg)
 {
-	Print(L"StrLen of c: %d", strlen(c));
+	//Print(L"StrLen of c: %d", strlen(c));	// Are you what's breaking  the output? :)
 	for (int i = 0; i < strlen(c); i++)
 	{
 		PutChar(framebuffer_base, pixels_per_scanline, x + i * GLYPH_WIDTH, y, CharToGlyph(c[i]), fg, bg);
